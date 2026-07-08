@@ -26,7 +26,7 @@ name = input("enter The Reciver's name: ")
 # Enter your message here
 
 msg = MIMEText(f"hello {name}, Enter your message here.")
-msg["Subject"] = "this is a test mail"
+msg["Subject"] = input("Enter your mail address subject:")
 msg["From"] = sender_email
 msg["To"] = reciver_email
 try:
