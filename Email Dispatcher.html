@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Email Dispatcher - Night Sky Edition</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<style>
+    :root {
+      --bg: #050507;
+      --surface: rgba(24, 24, 27, 0.65); /* Semi-transparent for glass effect */
+      --surface-hover: rgba(39, 39, 42, 0.8);
+      --text-main: #F4F4F5;
+      --text-muted: #A1A1AA;
+      --border: rgba(255, 255, 255, 0.1);
+      --border-focus: rgba(255, 255, 255, 0.3);
+      
+      --primary: #FFFFFF;
+      --primary-text: #09090B;
+      --primary-hover: #E4E4E7;
+      
+      --danger: #F87171;
+      --danger-bg: rgba(239, 68, 68, 0.15);
+      --success: #34D399;
+      --success-bg: rgba(16, 185, 129, 0.15);
+      --warning: #FBBF24;
+      --warning-bg: rgba(245, 158, 11, 0.15);
+      
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+      
+      --radius-sm: 8px;
+      --radius-md: 16px;
+      --shadow-sm: 0 4px 24px -4px rgba(0, 0, 0, 0.5);
+      --shadow-md: 0 8px 32px -4px rgba(0, 0, 0, 0.6);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      min-height: 100vh;
+      line-height: 1.5;
+      overflow-x: hidden;
+    }
+
+    /* ---------- Starfield Background ---------- */
+    #star-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: -1;
+      background: radial-gradient(circle at 50% 0%, #111827 0%, #050507 80%);
+    }
+
+    .office { 
+      max-width: 1180px; 
+      margin: 0 auto; 
+      padding: 3rem 1.5rem 5rem; 
+      position: relative;
+      z-index: 1;
+    }
+
+    /* ---------- Animations ---------- */
+    @keyframes fadeSlideUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    /* ---------- Masthead ---------- */
+    .masthead {
+      margin-bottom: 3.5rem;
+      animation: fadeSlideUp 0.6s ease-out;
+      text-align: center;
+    }
+    .masthead-inner { 
+      display: flex; 
+      flex-direction: column; 
+      gap: 0.75rem; 
+      align-items: center;
+    }
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+    .masthead h1 {
+      font-size: 2.75rem;
+      font-weight: 600;
+      margin: 0;
+      color: var(--primary);
+      letter-spacing: -0.02em;
+    }
+    .subtitle { 
+      color: var(--text-muted); 
+      font-size: 1.05rem; 
+      max-width: 500px; 
+    }
+
+    /* ---------- Desk layout ---------- */
+    .desk {
+      display: grid;
+      grid-template-columns: minmax(0, 1.4fr) minmax(340px, 1fr);
+      gap: 2.5rem;
+      align-items: start;
+    }
+    @media (max-width: 880px) {
+      .desk { grid-template-columns: 1fr; }
+    }
+
+    /* ---------- Shared Glassmorphism ---------- */
+    .glass-panel {
+      background: var(--surface);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* ---------- Order slip (form) ---------- */
+    .slip {
+      padding: 2.5rem;
+      animation: fadeSlideUp 0.6s ease-out 0.1s both;
+    }
+    .slip-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 1.25rem;
+      margin-bottom: 2rem;
+    }
+    .slip-head h2 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin: 0;
+    }
+    .slip-code {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      background: rgba(255,255,255,0.05);
+      padding: 0.25rem 0.6rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+    }
+
+    .field-row.two-up {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+    }
+    @media (max-width: 520px) {
+      .field-row.two-up { grid-template-columns: 1fr; }
+    }
+
+    .field { margin-bottom: 1.5rem; display: flex; flex-direction: column; gap: 0.5rem; }
+    .field label {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text-muted);
+    }
+    .field input, .field textarea {
+      font-family: var(--font-sans);
+      font-size: 0.95rem;
+      padding: 0.75rem 0.85rem;
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text-main);
+      transition: all 0.2s ease;
+    }
+    .field input::placeholder, .field textarea::placeholder {
+      color: #52525B;
+    }
+    .field input:focus, .field textarea:focus {
+      outline: none;
+      background: rgba(0, 0, 0, 0.6);
+      border-color: var(--border-focus);
+      box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.05);
+    }
+    .hint { 
+      font-size: 0.85rem; 
+      color: #71717A; 
+      margin: -0.75rem 0 1.5rem; 
+      line-height: 1.6; 
+    }
+    .hint code { 
+      font-family: var(--font-mono); 
+      background: rgba(255,255,255,0.1); 
+      padding: 0.15rem 0.35rem; 
+      border-radius: 4px;
+      font-size: 0.8rem;
+      color: var(--text-main);
+    }
+
+    /* ---------- Manifest (recipient list) ---------- */
+    .manifest { margin: 2rem 0; }
+    .manifest-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.25rem;
+    }
+    .manifest-head h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      margin: 0;
+    }
+    .ghost-btn {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+      color: var(--text-main);
+      font-size: 0.85rem;
+      font-weight: 500;
+      padding: 0.4rem 0.75rem;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .ghost-btn:hover { background: rgba(255,255,255,0.08); }
+    .ghost-btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+    .manifest-rows { display: flex; flex-direction: column; gap: 0.75rem; }
+    .manifest-row {
+      display: grid;
+      grid-template-columns: 2rem 1fr 1fr auto;
+      gap: 0.75rem;
+      align-items: center;
+      animation: fadeSlideUp 0.3s ease-out forwards;
+    }
+    @media (max-width: 640px) {
+      .manifest-row { grid-template-columns: 1.5rem 1fr 1fr 1.5rem; }
+    }
+    .row-no {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: #52525B;
+    }
+    .manifest-row input {
+      font-family: var(--font-sans);
+      font-size: 0.9rem;
+      padding: 0.6rem 0.75rem;
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text-main);
+      width: 100%;
+      transition: all 0.2s ease;
+    }
+    .manifest-row input:focus {
+      outline: none;
+      background: rgba(0, 0, 0, 0.6);
+      border-color: var(--border-focus);
+      box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.05);
+    }
+    .remove-row {
+      background: none;
+      border: none;
+      color: #52525B;
+      font-size: 1.25rem;
+      cursor: pointer;
+      padding: 0.2rem 0.4rem;
+      border-radius: 4px;
+      transition: all 0.2s ease;
+    }
+    .remove-row:hover { color: var(--danger); background: var(--danger-bg); }
+
+    /* ---------- Submit button ---------- */
+    .stamp-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      padding: 1rem;
+      background: var(--primary);
+      color: var(--primary-text);
+      border: none;
+      border-radius: var(--radius-sm);
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 0 15px rgba(255,255,255,0.1);
+    }
+    .stamp-btn:hover { background: var(--primary-hover); transform: translateY(-1px); box-shadow: 0 0 20px rgba(255,255,255,0.2); }
+    .stamp-btn:active { transform: translateY(0); }
+    .stamp-btn:disabled { opacity: 0.7; cursor: not-allowed; transform: none; box-shadow: none; }
+    
+    .stamp-btn.stamping {
+      animation: pulse 1s infinite;
+    }
+    @keyframes pulse {
+      0% { opacity: 1; }
+      50% { opacity: 0.7; }
+      100% { opacity: 1; }
+    }
+
+    .form-error {
+      color: var(--danger);
+      font-size: 0.875rem;
+      min-height: 1.2em;
+      margin-top: 1rem;
+      text-align: center;
+    }
+
+    /* ---------- Ledger (right column) ---------- */
+    .ledger {
+      padding: 2.25rem;
+      position: sticky;
+      top: 2rem;
+      animation: fadeSlideUp 0.6s ease-out 0.2s both;
+    }
+    .ledger-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 1.25rem;
+      margin-bottom: 1.75rem;
+    }
+    .ledger-head h2 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin: 0;
+    }
+    .tick {
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      color: var(--text-main);
+      background: rgba(255,255,255,0.1);
+      padding: 0.35rem 0.6rem;
+      border-radius: var(--radius-sm);
+      letter-spacing: 0.05em;
+    }
+    .ledger-empty {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      text-align: center;
+      padding: 2.5rem 0;
+    }
+    .ledger-entries { display: flex; flex-direction: column; gap: 1.25rem; }
+
+    .entry {
+      background: rgba(0, 0, 0, 0.4);
+      border-radius: var(--radius-sm);
+      padding: 1.25rem;
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--border);
+      animation: fadeIn 0.4s ease-out forwards;
+      transition: background 0.2s ease;
+    }
+    .entry:hover { background: rgba(0, 0, 0, 0.6); }
+    
+    .entry.status-done      { border-left-color: var(--success); }
+    .entry.status-failed    { border-left-color: var(--danger); }
+    .entry.status-partial   { border-left-color: var(--warning); }
+    .entry.status-scheduled { border-left-color: var(--primary); }
+    .entry.status-sending   { border-left-color: var(--text-muted); }
+
+    .entry-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.75rem;
+    }
+    .entry-sender {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text-main);
+      word-break: break-all;
+    }
+    .entry-status {
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      white-space: nowrap;
+    }
+    .entry-status.scheduled { background: rgba(255,255,255,0.1); color: var(--text-main); }
+    .entry-status.sending   { background: rgba(255,255,255,0.05); color: var(--text-muted); }
+    .entry-status.done      { background: var(--success-bg); color: var(--success); }
+    .entry-status.partial   { background: var(--warning-bg); color: var(--warning); }
+    .entry-status.failed    { background: var(--danger-bg); color: var(--danger); }
+
+    .entry-meta {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-bottom: 1rem;
+    }
+    .entry-recipients {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+    .entry-recipients li { color: var(--text-muted); display: flex; align-items: center; gap: 0.5rem;}
+    .entry-recipients li.r-sent::before   { content: "●"; color: var(--success); font-size: 10px; }
+    .entry-recipients li.r-failed::before { content: "●"; color: var(--danger); font-size: 10px; }
+    .entry-recipients li.r-pending::before{ content: "○"; color: #52525B; font-size: 10px; }
+
+    .cancel-btn {
+      margin-top: 1.25rem;
+      background: transparent;
+      border: 1px solid var(--danger);
+      color: var(--danger);
+      font-size: 0.75rem;
+      font-weight: 500;
+      padding: 0.4rem 0.75rem;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .cancel-btn:hover { background: var(--danger-bg); }
+
+    /* ---------- Footer ---------- */
+    .floor-note {
+      text-align: center;
+      margin-top: 5rem;
+      font-size: 0.85rem;
+      color: #52525B;
+      animation: fadeIn 0.5s ease-out 0.4s both;
+    }
+</style>
+</head>
+<body>
+
+<canvas id="star-canvas"></canvas>
+
+<div class="office">
+
+  <header class="masthead">
+    <div class="masthead-inner">
+      <span class="eyebrow">Automated Dispatch System</span>
+      <h1>Email Dispatcher</h1>
+      <span class="subtitle">Schedule your messages. Name your recipients. Automatically dispatched when the time comes.</span>
+    </div>
+  </header>
+
+  <main class="desk">
+
+    <section class="slip glass-panel" aria-labelledby="form-heading">
+      <div class="slip-head">
+        <h2 id="form-heading">New Dispatch</h2>
+        <span class="slip-code">v2.1 Night</span>
+      </div>
+
+      <form id="dispatch-form" novalidate>
+
+        <div class="field-row two-up">
+          <div class="field">
+            <label for="sender_email">Sender email</label>
+            <input type="email" id="sender_email" required placeholder="you@gmail.com" autocomplete="username">
+          </div>
+          <div class="field">
+            <label for="password">App password</label>
+            <input type="password" id="password" required placeholder="16-character password" autocomplete="current-password">
+          </div>
+        </div>
+        <p class="hint">Gmail requires an <strong>App Password</strong> (Security &rarr; 2-Step Verification &rarr; App Passwords). Held in memory temporarily, never written to disk.</p>
+
+        <div class="field-row two-up">
+          <div class="field">
+            <label for="send_date">Send on (dd-mm)</label>
+            <input type="text" id="send_date" required placeholder="25-12" pattern="\d{2}-\d{2}">
+          </div>
+          <div class="field">
+            <label for="send_time">Send at (hh:mm, 24h)</label>
+            <input type="text" id="send_time" required placeholder="09:30" pattern="\d{2}:\d{2}">
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="subject">Subject line</label>
+          <input type="text" id="subject" placeholder="A message for you">
+        </div>
+
+        <div class="field">
+          <label for="message_template">Message</label>
+          <textarea id="message_template" rows="4" required placeholder="Hello {name}, ..."></textarea>
+          <span class="hint">Use <code>{name}</code> to inject the recipient's name dynamically.</span>
+        </div>
+
+        <div class="manifest">
+          <div class="manifest-head">
+            <h3>Recipients</h3>
+            <button type="button" id="add-recipient" class="ghost-btn">+ Add row</button>
+          </div>
+          <div id="recipient-rows" class="manifest-rows">
+            </div>
+        </div>
+
+        <button type="submit" class="stamp-btn">
+          <span class="stamp-btn-label">Schedule Dispatch</span>
+        </button>
+        <p id="form-error" class="form-error" role="alert"></p>
+      </form>
+    </section>
+
+    <aside class="ledger glass-panel" aria-labelledby="ledger-heading">
+      <div class="ledger-head">
+        <h2 id="ledger-heading">Dispatch Ledger</h2>
+        <span class="tick" id="clock">--:--:--</span>
+      </div>
+      <div id="ledger-empty" class="ledger-empty">No active dispatches. Schedule one on the left.</div>
+      <div id="ledger-entries" class="ledger-entries"></div>
+    </aside>
+
+  </main>
+
+  <footer class="floor-note">
+    Runs locally &middot; Scheduling checked every 15 seconds
+  </footer>
+
+</div>
+
+<script src="{{ url_for('static', filename='script.js') }}"></script>
+<script>
+// --- STARFIELD BACKGROUND LOGIC ---
+(function initStarfield() {
+  const canvas = document.getElementById('star-canvas');
+  const ctx = canvas.getContext('2d');
+  let width, height;
+  let stars = [];
+
+  function resize() {
+    width = canvas.width = window.innerWidth;
+    height = canvas.height = window.innerHeight;
+    createStars();
+  }
+
+  function createStars() {
+    stars = [];
+    const numStars = Math.floor((width * height) / 3000); // Scale star count to screen size
+    for (let i = 0; i < numStars; i++) {
+      stars.push({
+        x: Math.random() * width,
+        y: Math.random() * height,
+        r: Math.random() * 1.5 + 0.5,
+        vx: (Math.random() - 0.5) * 0.15,
+        vy: (Math.random() - 0.5) * 0.15 + 0.05, // Slight upward/downward drift bias
+        opacity: Math.random() * 0.8 + 0.2
+      });
+    }
+  }
+
+  function renderStars() {
+    ctx.clearRect(0, 0, width, height);
+    
+    for (let star of stars) {
+      star.x += star.vx;
+      star.y += star.vy;
+
+      // Wrap around edges
+      if (star.x < 0) star.x = width;
+      if (star.x > width) star.x = 0;
+      if (star.y < 0) star.y = height;
+      if (star.y > height) star.y = 0;
+
+      ctx.beginPath();
+      ctx.arc(star.x, star.y, star.r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(255, 255, 255, ${star.opacity})`;
+      ctx.fill();
+    }
+    requestAnimationFrame(renderStars);
+  }
+
+  window.addEventListener('resize', resize);
+  resize();
+  renderStars();
+})();
+
+// --- APPLICATION LOGIC ---
+(function () {
+  const rowsContainer = document.getElementById("recipient-rows");
+  const addBtn = document.getElementById("add-recipient");
+  const form = document.getElementById("dispatch-form");
+  const errorEl = document.getElementById("form-error");
+  const stampBtn = form.querySelector(".stamp-btn");
+  const ledgerEntries = document.getElementById("ledger-entries");
+  const ledgerEmpty = document.getElementById("ledger-empty");
+  const clockEl = document.getElementById("clock");
+  const btnLabel = stampBtn.querySelector(".stamp-btn-label");
+
+  let rowCount = 0;
+
+  function addRecipientRow(prefillEmail = "", prefillName = "") {
+    rowCount += 1;
+    const row = document.createElement("div");
+    row.className = "manifest-row";
+    row.innerHTML = `
+      <span class="row-no">${String(rowCount).padStart(2, "0")}</span>
+      <input type="email" class="r-email" placeholder="recipient@example.com" value="${prefillEmail}" required>
+      <input type="text" class="r-name" placeholder="Recipient name" value="${prefillName}">
+      <button type="button" class="remove-row" aria-label="Remove this recipient">&times;</button>
+    `;
+    row.querySelector(".remove-row").addEventListener("click", () => {
+      row.remove();
+      renumberRows();
+    });
+    rowsContainer.appendChild(row);
+  }
+
+  function renumberRows() {
+    const rows = rowsContainer.querySelectorAll(".manifest-row");
+    rows.forEach((row, i) => {
+      row.querySelector(".row-no").textContent = String(i + 1).padStart(2, "0");
+    });
+    rowCount = rows.length;
+  }
+
+  addBtn.addEventListener("click", () => addRecipientRow());
+  addRecipientRow();
+  addRecipientRow();
+
+  function collectReceivers() {
+    return Array.from(rowsContainer.querySelectorAll(".manifest-row"))
+      .map((row) => ({
+        email: row.querySelector(".r-email").value.trim(),
+        name: row.querySelector(".r-name").value.trim(),
+      }))
+      .filter((r) => r.email.length > 0);
+  }
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    errorEl.textContent = "";
+
+    const payload = {
+      sender_email: document.getElementById("sender_email").value.trim(),
+      password: document.getElementById("password").value,
+      send_date: document.getElementById("send_date").value.trim(),
+      send_time: document.getElementById("send_time").value.trim(),
+      subject: document.getElementById("subject").value.trim(),
+      message_template: document.getElementById("message_template").value,
+      receivers: collectReceivers(),
+    };
+
+    if (!/^\d{2}-\d{2}$/.test(payload.send_date)) {
+      errorEl.textContent = "Send date must look like dd-mm, e.g. 25-12.";
+      return;
+    }
+    if (!/^\d{2}:\d{2}$/.test(payload.send_time)) {
+      errorEl.textContent = "Send time must look like hh:mm in 24-hour format, e.g. 09:30.";
+      return;
+    }
+    if (payload.receivers.length === 0) {
+      errorEl.textContent = "Add at least one recipient with an email address.";
+      return;
+    }
+
+    stampBtn.disabled = true;
+    btnLabel.textContent = "Scheduling...";
+    stampBtn.classList.add("stamping");
+
+    try {
+      const res = await fetch("/api/schedule", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      
+      if (!res.ok) {
+        errorEl.textContent = data.error || "Something went wrong scheduling this dispatch.";
+        stampBtn.disabled = false;
+        btnLabel.textContent = "Schedule Dispatch";
+        stampBtn.classList.remove("stamping");
+        return;
+      }
+
+      document.getElementById("password").value = "";
+      
+      setTimeout(() => {
+        stampBtn.classList.remove("stamping");
+        btnLabel.textContent = "Schedule Dispatch";
+        stampBtn.disabled = false;
+      }, 600);
+
+      await refreshLedger();
+    } catch (err) {
+      errorEl.textContent = "Could not reach the dispatch server. Is it running?";
+      stampBtn.disabled = false;
+      btnLabel.textContent = "Schedule Dispatch";
+      stampBtn.classList.remove("stamping");
+    }
+  });
+
+  function statusLabel(status) {
+    switch (status) {
+      case "scheduled": return "Scheduled";
+      case "sending": return "Sending";
+      case "done": return "Delivered";
+      case "partial": return "Partial";
+      case "failed": return "Failed";
+      default: return status;
+    }
+  }
+
+  function renderJob(job) {
+    const entry = document.createElement("div");
+    entry.className = `entry status-${job.status}`;
+
+    const recipientItems = job.receivers
+      .map((r) => {
+        const cls = r.status === "sent" ? "r-sent" : r.status === "failed" ? "r-failed" : "r-pending";
+        const label = r.name ? `${r.name} <${r.email}>` : r.email;
+        return `<li class="${cls}">${escapeHtml(label)}</li>`;
+      })
+      .join("");
+
+    const cancelHtml = job.status === "scheduled"
+      ? `<button class="cancel-btn" data-job-id="${job.id}">Cancel dispatch</button>`
+      : "";
+
+    entry.innerHTML = `
+      <div class="entry-top">
+        <span class="entry-sender">${escapeHtml(job.sender_email)}</span>
+        <span class="entry-status ${job.status}">${statusLabel(job.status)}</span>
+      </div>
+      <div class="entry-meta">Fires ${escapeHtml(job.send_date)} at ${escapeHtml(job.send_time)} &middot; "${escapeHtml(job.subject)}"</div>
+      <ul class="entry-recipients">${recipientItems}</ul>
+      ${cancelHtml}
+    `;
+
+    const cancelBtn = entry.querySelector(".cancel-btn");
+    if (cancelBtn) {
+      cancelBtn.addEventListener("click", async () => {
+        await fetch(`/api/jobs/${job.id}`, { method: "DELETE" });
+        refreshLedger();
+      });
+    }
+
+    return entry;
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement("div");
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  async function refreshLedger() {
+    try {
+      const res = await fetch("/api/jobs");
+      const jobs = await res.json();
+      ledgerEntries.innerHTML = "";
+      if (jobs.length === 0) {
+        ledgerEmpty.style.display = "block";
+      } else {
+        ledgerEmpty.style.display = "none";
+        jobs.forEach((job) => ledgerEntries.appendChild(renderJob(job)));
+      }
+    } catch (err) {}
+  }
+
+  function tickClock() {
+    const now = new Date();
+    clockEl.textContent = now.toLocaleTimeString([], { hour12: false });
+  }
+
+  tickClock();
+  setInterval(tickClock, 1000);
+  refreshLedger();
+  setInterval(refreshLedger, 5000);
+})();
+</script>
+</body>
+</html>
