@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bulk Email Sender</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #050507;
+    --surface: rgba(24, 24, 27, 0.65);
+    --text-main: #F4F4F5;
+    --text-muted: #A1A1AA;
+    --border: rgba(255, 255, 255, 0.1);
+    --border-focus: rgba(255, 255, 255, 0.3);
+    --primary: #FFFFFF;
+    --primary-text: #09090B;
+    --primary-hover: #E4E4E7;
+    --danger: #F87171;
+    --danger-bg: rgba(239, 68, 68, 0.15);
+    --success: #34D399;
+    --success-bg: rgba(16, 185, 129, 0.15);
+    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+    --radius-sm: 8px;
+    --radius-md: 16px;
+    --shadow-sm: 0 4px 24px -4px rgba(0, 0, 0, 0.5);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text-main);
+    font-family: var(--font-sans);
+    min-height: 100vh;
+    line-height: 1.5;
+  }
+  .office { max-width: 1180px; margin: 0 auto; padding: 3rem 1.5rem 5rem; }
+  .masthead { margin-bottom: 3rem; text-align: center; }
+  .masthead h1 { font-size: 2.5rem; font-weight: 600; margin: 0.5rem 0; }
+  .subtitle { color: var(--text-muted); }
+  .desk { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(340px, 1fr); gap: 2.5rem; align-items: start; }
+  @media (max-width: 880px) { .desk { grid-template-columns: 1fr; } }
+  .glass-panel {
+    background: var(--surface);
+    backdrop-filter: blur(16px);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    padding: 2rem;
+  }
+  .field { margin-bottom: 1.25rem; display: flex; flex-direction: column; gap: 0.4rem; }
+  .field-row.two-up { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
+  @media (max-width: 520px) { .field-row.two-up { grid-template-columns: 1fr; } }
+  .field label { font-size: 0.85rem; color: var(--text-muted); }
+  .field input, .field textarea {
+    font-family: var(--font-sans);
+    font-size: 0.95rem;
+    padding: 0.7rem 0.8rem;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text-main);
+  }
+  .field input:focus, .field textarea:focus {
+    outline: none;
+    border-color: var(--border-focus);
+  }
+  .hint { font-size: 0.8rem; color: #71717A; margin: -0.5rem 0 1.25rem; }
+  .manifest-rows { display: flex; flex-direction: column; gap: 0.6rem; margin-bottom: 1rem; }
+  .manifest-row { display: grid; grid-template-columns: 1fr 1fr auto; gap: 0.6rem; }
+  .manifest-row input {
+    font-size: 0.9rem;
+    padding: 0.55rem 0.7rem;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text-main);
+  }
+  .ghost-btn, .stamp-btn, .remove-row {
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+    font-weight: 500;
+  }
+  .ghost-btn {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border);
+    color: var(--text-main);
+    font-size: 0.85rem;
+    padding: 0.5rem 0.85rem;
+  }
+  .ghost-btn:hover { background: rgba(255,255,255,0.08); }
+  .remove-row {
+    background: none; border: none; color: #52525B; font-size: 1.1rem; padding: 0.2rem 0.5rem;
+  }
+  .remove-row:hover { color: var(--danger); }
+  .stamp-btn {
+    width: 100%;
+    padding: 0.9rem;
+    background: var(--primary);
+    color: var(--primary-text);
+    border: none;
+    font-size: 1rem;
+    margin-top: 0.5rem;
+  }
+  .stamp-btn:hover { background: var(--primary-hover); }
+  .stamp-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+  .form-error { color: var(--danger); font-size: 0.85rem; min-height: 1.2em; margin-top: 0.75rem; }
+  .form-note { color: var(--success); font-size: 0.85rem; min-height: 1.2em; margin-top: 0.75rem; }
+  .progress-track {
+    height: 8px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 4px;
+    overflow: hidden;
+    margin: 1rem 0;
+    display: none;
+  }
+  .progress-fill { height: 100%; background: var(--primary); width: 0%; transition: width 0.2s ease; }
+  .recipient-status-list { list-style: none; margin: 0.5rem 0 0; padding: 0; font-family: var(--font-mono); font-size: 0.78rem; max-height: 220px; overflow-y: auto; }
+  .recipient-status-list li { padding: 0.3rem 0; color: var(--text-muted); display: flex; justify-content: space-between; gap: 0.5rem; }
+  .recipient-status-list li.r-sent { color: var(--success); }
+  .recipient-status-list li.r-failed { color: var(--danger); }
+  .ledger-empty { color: var(--text-muted); text-align: center; padding: 2rem 0; font-size: 0.9rem; }
+  .history-row { display: flex; justify-content: space-between; font-size: 0.85rem; padding: 0.5rem 0; border-bottom: 1px solid var(--border); }
+  .history-row:last-child { border-bottom: none; }
+  h2 { font-size: 1.15rem; margin: 0 0 1.25rem; }
+</style>
+</head>
+<body>
+
+<div class="office">
+  <header class="masthead">
+    <span class="hint">Bulk Email Sender</span>
+    <h1>Send one message to many people</h1>
+    <p class="subtitle">Add recipients by hand or upload a CSV. Your email credentials stay in this browser tab only.</p>
+  </header>
+
+  <main class="desk">
+    <section class="glass-panel" aria-labelledby="form-heading">
+      <h2 id="form-heading">New send</h2>
+
+      <form id="send-form" novalidate>
+        <div class="field-row two-up">
+          <div class="field">
+            <label for="smtp_host">SMTP host</label>
+            <input type="text" id="smtp_host" required placeholder="smtp.gmail.com">
+          </div>
+          <div class="field">
+            <label for="smtp_port">Port</label>
+            <input type="number" id="smtp_port" required placeholder="587" value="587">
+          </div>
+        </div>
+        <div class="field-row two-up">
+          <div class="field">
+            <label for="smtp_user">Your email address</label>
+            <input type="email" id="smtp_user" required placeholder="you@gmail.com" autocomplete="username">
+          </div>
+          <div class="field">
+            <label for="smtp_pass">App password</label>
+            <input type="password" id="smtp_pass" required placeholder="16-character app password" autocomplete="current-password">
+          </div>
+        </div>
+        <p class="hint">For Gmail: Google Account &rarr; Security &rarr; 2-Step Verification &rarr; App passwords. Nothing here is saved anywhere — you'll re-enter it next time.</p>
+
+        <div class="field">
+          <label for="subject">Subject</label>
+          <input type="text" id="subject" placeholder="A message for you">
+        </div>
+        <div class="field">
+          <label for="message_template">Message</label>
+          <textarea id="message_template" rows="4" required placeholder="Hi {name}, ..."></textarea>
+          <span class="hint">Use <code>{name}</code>, <code>{company}</code>, or any column name from your CSV as a placeholder.</span>
+        </div>
+
+        <div class="field">
+          <label>Recipients</label>
+          <div id="recipient-rows" class="manifest-rows"></div>
+          <button type="button" id="add-recipient" class="ghost-btn">+ Add recipient</button>
+        </div>
+
+        <div class="field">
+          <label for="csv-upload">Or upload a CSV (must include an "email" column)</label>
+          <input type="file" id="csv-upload" accept=".csv,text/csv">
+          <span id="csv-status" class="hint"></span>
+        </div>
+
+        <button type="submit" class="stamp-btn" id="send-btn">Send</button>
+        <p id="form-error" class="form-error" role="alert"></p>
+        <p id="form-note" class="form-note" role="status"></p>
+
+        <div class="progress-track" id="progress-track">
+          <div class="progress-fill" id="progress-fill"></div>
+        </div>
+        <ul class="recipient-status-list" id="recipient-status-list"></ul>
+      </form>
+    </section>
+
+    <aside class="glass-panel" aria-labelledby="history-heading">
+      <h2 id="history-heading">Send history</h2>
+      <div id="history-empty" class="ledger-empty">No sends yet.</div>
+      <div id="history-list"></div>
+      <button type="button" id="download-history" class="ghost-btn" style="margin-top:1rem; display:none;">Download history as CSV</button>
+    </aside>
+  </main>
+</div>
+
+<script type="module" src="/app.js"></script>
+</body>
+</html>
