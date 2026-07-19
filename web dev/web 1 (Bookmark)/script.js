@@ -1,1 +1,0 @@
-alert("welcome to my website Bookmarks by Pravesh Sharma")

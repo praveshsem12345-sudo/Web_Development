@@ -1,1 +1,0 @@
-alert("Do not refresh the page")
