@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>love.exe</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#07020f;
+    --bg2:#120a24;
+    --pink:#ff2d92;
+    --cyan:#00f6ff;
+    --violet:#8b5cf6;
+    --green:#39ff88;
+    --text:#d6d0f0;
+  }
+  *{ margin:0; padding:0; box-sizing:border-box; }
+  body{
+    min-height:100vh;
+    background:
+      radial-gradient(circle at 15% 15%, rgba(139,92,246,0.18), transparent 40%),
+      radial-gradient(circle at 85% 80%, rgba(255,45,146,0.16), transparent 45%),
+      var(--bg);
+    font-family:'JetBrains Mono', monospace;
+    color:var(--text);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    overflow:hidden;
+    position:relative;
+  }
+  body::before{
+    content:'';
+    position:fixed; inset:0;
+    background:repeating-linear-gradient(
+      to bottom,
+      rgba(255,255,255,0.025) 0px,
+      rgba(255,255,255,0.025) 1px,
+      transparent 2px,
+      transparent 3px
+    );
+    pointer-events:none;
+    z-index:50;
+  }
+  body::after{
+    content:'';
+    position:fixed; inset:0;
+    background:radial-gradient(circle, transparent 55%, rgba(0,0,0,0.55) 100%);
+    pointer-events:none;
+    z-index:49;
+  }
+  .grid{
+    position:fixed;
+    inset:0;
+    background-image:
+      linear-gradient(rgba(139,92,246,0.12) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(139,92,246,0.12) 1px, transparent 1px);
+    background-size:42px 42px;
+    -webkit-mask-image:radial-gradient(ellipse at center, black 0%, transparent 70%);
+    mask-image:radial-gradient(ellipse at center, black 0%, transparent 70%);
+    z-index:0;
+    animation:drift 14s linear infinite;
+  }
+  @keyframes drift{
+    0%{ background-position:0 0, 0 0; }
+    100%{ background-position:42px 42px, 42px 42px; }
+  }
+  .particles{ position:fixed; inset:0; z-index:1; pointer-events:none; }
+  .p{
+    position:absolute;
+    width:3px; height:3px;
+    border-radius:50%;
+    background:var(--cyan);
+    opacity:0.7;
+    box-shadow:0 0 8px var(--cyan);
+    animation:rise linear infinite;
+  }
+  @keyframes rise{
+    0%{ transform:translateY(0); opacity:0; }
+    10%{ opacity:0.8; }
+    90%{ opacity:0.4; }
+    100%{ transform:translateY(-110vh); opacity:0; }
+  }
+  
+  /* Layout Containers */
+  .stage{ position:relative; z-index:2; width:min(560px, 92vw); }
+  
+  /* Boot Screen */
+  .boot{
+    background:rgba(10,4,24,0.85);
+    border:1px solid rgba(139,92,246,0.4);
+    border-radius:10px;
+    padding:clamp(20px,4vw,34px);
+    box-shadow:0 0 40px rgba(139,92,246,0.25), inset 0 0 30px rgba(0,0,0,0.5);
+    backdrop-filter:blur(6px);
+    transition:opacity 0.5s ease, transform 0.5s ease, visibility 0.5s;
+  }
+  .boot.hidden{
+    opacity:0; transform:scale(0.96); visibility:hidden; position:absolute; inset:0; pointer-events:none;
+  }
+  .boot-top{ display:flex; gap:8px; margin-bottom:16px; }
+  .dot{ width:11px; height:11px; border-radius:50%; }
+  .dot.red{ background:#ff5f57; }
+  .dot.yellow{ background:#febc2e; }
+  .dot.green{ background:#28c840; }
+  .boot-line{ font-size:14px; line-height:1.9; color:var(--green); white-space:pre-wrap; }
+  
+  .run-btn{
+    margin-top:22px;
+    font-family:'JetBrains Mono', monospace;
+    font-size:14px;
+    background:transparent;
+    color:var(--cyan);
+    border:1px solid var(--cyan);
+    padding:12px 24px;
+    border-radius:6px;
+    cursor:pointer;
+    letter-spacing:1px;
+    transition:all 0.25s ease;
+    opacity:0;
+  }
+  .run-btn.ready{ opacity:1; animation:pulseGlow 2s ease-in-out infinite; }
+  .run-btn:hover{ background:var(--cyan); color:#031014; box-shadow:0 0 25px var(--cyan); }
+  @keyframes pulseGlow{
+    0%,100%{ box-shadow:0 0 8px rgba(0,246,255,0.4); }
+    50%{ box-shadow:0 0 20px rgba(0,246,255,0.8); }
+  }
+
+  /* Text Card */
+  .card{
+    background:rgba(10,4,24,0.85);
+    border:1px solid rgba(255,45,146,0.35);
+    border-radius:10px;
+    padding:clamp(28px,5vw,44px);
+    text-align:center;
+    box-shadow:0 0 50px rgba(255,45,146,0.2), inset 0 0 30px rgba(0,0,0,0.5);
+    backdrop-filter:blur(6px);
+    opacity:0;
+    transform:translateY(20px);
+    transition:opacity 0.6s ease, transform 0.6s ease;
+    max-height:88vh;
+    overflow-y:auto;
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    visibility: hidden;
+  }
+  .card.show{ 
+    opacity:1; 
+    transform:translateY(0); 
+    position: relative;
+    pointer-events: auto;
+    visibility: visible;
+  }
+  .card.fade-out{
+    opacity: 0;
+    transform: scale(0.95);
+    pointer-events: none;
+  }
+
+  .tag{ font-size:12px; letter-spacing:3px; color:var(--violet); margin-bottom:14px; }
+  .title{
+    font-family:'Orbitron', sans-serif;
+    font-weight:800;
+    font-size:clamp(28px, 6.5vw, 42px);
+    letter-spacing:1px;
+    margin-bottom:22px;
+    color:#fff;
+    text-shadow:0 0 6px var(--cyan), 0 0 16px var(--pink);
+    animation:flicker 4.5s infinite;
+  }
+  @keyframes flicker{
+    0%,3%,6%,100%{ opacity:1; }
+    4%{ opacity:0.6; }
+    5%{ opacity:0.9; }
+  }
+  .title .glitch-heart{ color:var(--pink); }
+  .terminal-text{
+    font-size:clamp(13.5px, 2.2vw, 15px);
+    line-height:1.9;
+    text-align:left;
+    min-height:150px;
+    white-space:pre-wrap;
+  }
+  .divider{ height:1px; margin:24px 0; background:linear-gradient(90deg, transparent, var(--violet), transparent); }
+  .question{ font-family:'Orbitron', sans-serif; font-size:clamp(15px, 3vw, 18px); color:var(--cyan); margin-bottom:20px; opacity:0; }
+  .question.show{ animation:fadeIn 0.6s ease forwards; }
+  @keyframes fadeIn{ from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:translateY(0);} }
+  
+  .btn-row{ position:relative; display:flex; gap:16px; justify-content:center; flex-wrap:wrap; min-height:56px; opacity:0; }
+  .btn-row.show{ animation:fadeIn 0.6s ease forwards; }
+  button.action{ font-family:'JetBrains Mono', monospace; font-size:14px; font-weight:500; padding:13px 26px; border-radius:6px; cursor:pointer; transition:transform 0.2s ease, box-shadow 0.2s ease; }
+  .yes-btn{ background:var(--pink); color:#0a0118; border:1px solid var(--pink); box-shadow:0 0 18px rgba(255,45,146,0.5); }
+  .yes-btn:hover{ transform:scale(1.06); box-shadow:0 0 30px rgba(255,45,146,0.75); }
+  .no-btn{ background:transparent; color:var(--text); border:1px solid rgba(214,208,240,0.35); }
+  .no-btn.moved{ position:fixed; }
+  
+  .result{ margin-top:20px; font-size:14px; color:var(--green); min-height:20px; }
+  .footer-note{ margin-top:26px; font-size:10.5px; letter-spacing:1px; color:#5f5480; }
+
+  /* Memory Card (Envelope) */
+  .memory-card{
+    background:rgba(10,4,24,0.85);
+    border:1px solid rgba(0,246,255,0.35);
+    border-radius:10px;
+    padding:clamp(28px,5vw,44px);
+    text-align:center;
+    box-shadow:0 0 50px rgba(0,246,255,0.15), inset 0 0 30px rgba(0,0,0,0.5);
+    backdrop-filter:blur(6px);
+    opacity:0;
+    transform:translateY(20px);
+    transition:opacity 0.6s ease, transform 0.6s ease;
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    visibility: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  .memory-card.show{
+    opacity:1; 
+    transform:translateY(0); 
+    position: relative;
+    pointer-events: auto;
+    visibility: visible;
+  }
+
+  /* Interactive Envelope */
+  .envelope-wrapper {
+    position: relative;
+    width: min(100%, 320px);
+    height: 200px;
+    margin: 60px auto 40px;
+    cursor: pointer;
+    perspective: 1000px;
+  }
+  /* Envelope Body / Back */
+  .env-back {
+    position: absolute;
+    bottom: 0; left: 0; right: 0; top: 0;
+    background: #1a0f2e;
+    border: 2px solid var(--pink);
+    border-radius: 6px;
+    box-shadow: 0 0 20px rgba(255,45,146,0.2);
+    z-index: 1;
+  }
+  /* Envelope Front (Pocket) */
+  .env-front {
+    position: absolute;
+    bottom: 0; left: 0; right: 0; top: 0;
+    z-index: 4;
+    pointer-events: none;
+    border-left: 160px solid rgba(255, 45, 146, 0.15);
+    border-right: 160px solid rgba(255, 45, 146, 0.15);
+    border-bottom: 110px solid rgba(255, 45, 146, 0.3);
+    border-top: 90px solid transparent;
+    border-radius: 6px;
+  }
+  /* Envelope Flap */
+  .env-flap {
+    position: absolute;
+    top: 0; left: 0; right: 0; height: 110px;
+    background: #23153c;
+    border: 2px solid var(--pink);
+    border-bottom: none;
+    clip-path: polygon(0 0, 100% 0, 50% 100%);
+    transform-origin: top;
+    transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1), z-index 0s 0.3s;
+    z-index: 5;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding-bottom: 20px;
+  }
+  .env-seal {
+    color: var(--cyan);
+    font-size: 24px;
+    text-shadow: 0 0 10px var(--cyan);
+    animation: pulseGlow 2s infinite;
+  }
+  
+  /* Open state classes */
+  .envelope-wrapper.open .env-flap {
+    transform: rotateX(180deg);
+    z-index: 2; /* Drops behind front pocket so photos emerge in front of it */
+    transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1), z-index 0s 0.3s;
+  }
+  .envelope-wrapper.open .env-seal {
+    display: none;
+  }
+
+  /* Photos Container */
+  .photos {
+    position: absolute;
+    top: 10px; left: 20px; right: 20px; bottom: 10px;
+    z-index: 3;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  /* Polaroid styling */
+  .polaroid {
+    position: absolute;
+    width: 130px;
+    height: 155px;
+    background: #fff;
+    padding: 8px 8px 30px 8px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+    border-radius: 4px;
+    opacity: 0;
+    transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.8s ease;
+    transform: scale(0.5) translateY(0);
+  }
+  .polaroid img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    background: #ccc;
+    border-radius: 2px;
+  }
+
+  /* Fanning out animation */
+  .envelope-wrapper.open .p1 {
+    opacity: 1;
+    transform: translate(-70px, -130px) rotate(-18deg) scale(1.1);
+    transition-delay: 0.3s;
+    z-index: 3;
+  }
+  .envelope-wrapper.open .p2 {
+    opacity: 1;
+    transform: translate(0px, -150px) rotate(2deg) scale(1.15);
+    transition-delay: 0.5s;
+    z-index: 4;
+  }
+  .envelope-wrapper.open .p3 {
+    opacity: 1;
+    transform: translate(70px, -120px) rotate(22deg) scale(1.1);
+    transition-delay: 0.7s;
+    z-index: 5;
+  }
+
+  .envelope-hint {
+    margin-top: 20px;
+    font-size: 13px;
+    color: var(--cyan);
+    letter-spacing: 1px;
+    animation: blink 2s infinite;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ animation-duration:0.01ms !important; animation-iteration-count:1 !important; transition-duration:0.01ms !important; }
+  }
+</style>
+</head>
+<body>
+<div class="grid"></div>
+<div class="particles" id="particles"></div>
+<div class="stage">
+  
+  <!-- BOOT SCREEN -->
+  <div class="boot" id="boot">
+    <div class="boot-top"><span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span></div>
+    <div class="boot-line" id="bootLine"></div>
+    <button class="run-btn" id="runBtn">▶ run love.exe</button>
+  </div>
+
+  <!-- TEXT MESSAGE CARD -->
+  <div class="card" id="card">
+    <div class="tag">SYSTEM MESSAGE // PRIORITY: HIGH</div>
+    <div class="title"><span class="glitch-heart">♥</span> LOVE.EXE <span class="glitch-heart">♥</span></div>
+    <div class="terminal-text" id="terminalText"></div>
+    <div class="divider"></div>
+    <div class="question" id="question">// do you accept this request, always?</div>
+    <div class="btn-row" id="btnRow">
+      <button class="action yes-btn" id="yesBtn">[ YES ]</button>
+      <button class="action no-btn" id="noBtn">[ NO ]</button>
+    </div>
+    <div class="result" id="result"></div>
+    <div class="footer-note">PROCESS: love.exe — STATUS: WAITING FOR INPUT</div>
+  </div>
+
+  <!-- MEMORY CARD (ENVELOPE) -->
+  <div class="memory-card" id="memoryCard">
+    <div class="tag">DECRYPTING MEMORIES...</div>
+    
+    <div class="envelope-wrapper" id="envelope">
+      <div class="env-back"></div>
+      
+      <!-- Photos inside -->
+      <div class="photos">
+        <div class="polaroid p1">
+          <!-- Placeholder Love Image 1 -->
+          <img src="https://images.unsplash.com/photo-1518199268839-482c35e80718?auto=format&fit=crop&w=400&q=80" alt="love memory 1">
+        </div>
+        <div class="polaroid p2">
+          <!-- Placeholder Love Image 2 -->
+          <img src="https://images.unsplash.com/photo-1522673607200-164d1b6ce486?auto=format&fit=crop&w=400&q=80" alt="love memory 2">
+        </div>
+        <div class="polaroid p3">
+          <!-- Placeholder Love Image 3 -->
+          <img src="https://images.unsplash.com/photo-1474552226712-ac0f0961a954?auto=format&fit=crop&w=400&q=80" alt="love memory 3">
+        </div>
+      </div>
+
+      <div class="env-front"></div>
+      <div class="env-flap">
+        <div class="env-seal">♥</div>
+      </div>
+    </div>
+    
+    <div class="envelope-hint" id="envelopeHint">>> CLICK TO OPEN ENVELOPE <<</div>
+    <div class="footer-note" style="margin-top: 40px;">PROCESS: love.exe — STATUS: RUNNING FOREVER</div>
+  </div>
+
+</div>
+
+<script>
+  // -- Particle Background Effect --
+  const pWrap = document.getElementById('particles');
+  function spawnParticle(){
+    const p = document.createElement('div');
+    p.className = 'p';
+    p.style.left = Math.random()*100+'%';
+    p.style.bottom = '-10px';
+    p.style.animationDuration = (6+Math.random()*6)+'s';
+    p.style.background = Math.random() > 0.5 ? 'var(--cyan)' : 'var(--pink)';
+    p.style.boxShadow = '0 0 8px currentColor';
+    pWrap.appendChild(p);
+    setTimeout(()=>p.remove(), 13000);
+  }
+  setInterval(spawnParticle, 400);
+  for(let i=0;i<10;i++) setTimeout(spawnParticle, i*200);
+
+  // -- Boot Sequence --
+  const bootLine = document.getElementById('bootLine');
+  const runBtn = document.getElementById('runBtn');
+  const bootScript = [
+    "> initializing love.exe ...",
+    "> loading memories... [OK]",
+    "> loading inside jokes... [OK]",
+    "> compiling feelings... [OK]",
+    "> ready."
+  ];
+  async function typeLine(text, el, speed=22){
+    for(const ch of text){ el.textContent += ch; await new Promise(r => setTimeout(r, speed)); }
+  }
+  async function runBoot(){
+    for(const line of bootScript){
+      const div = document.createElement('div');
+      bootLine.appendChild(div);
+      await typeLine(line, div);
+      await new Promise(r => setTimeout(r, 220));
+    }
+    runBtn.classList.add('ready');
+  }
+  runBoot();
+
+  // -- Transition to Main Card --
+  const boot = document.getElementById('boot');
+  const card = document.getElementById('card');
+  const terminalText = document.getElementById('terminalText');
+  const question = document.getElementById('question');
+  const btnRow = document.getElementById('btnRow');
+  const message = `> Hey, Meri Jaan.
+
+This is a program with exactly one function: to remind you that I love you. It has no bugs, no crashes, and it runs in the background of everything I do.
+
+You're the best line of code I never had to debug — you just fit, from the start.
+
+No matter how many updates life throws at us, this one thing stays constant: I'm yours.`;
+
+  async function openCard(){
+    boot.classList.add('hidden');
+    card.classList.add('show');
+    await typeLine(message, terminalText);
+    await new Promise(r => setTimeout(r, 300));
+    question.classList.add('show');
+    btnRow.classList.add('show');
+  }
+  runBtn.addEventListener('click', openCard);
+
+  // -- Interactive Dodging 'NO' Button --
+  const noBtn = document.getElementById('noBtn');
+  const yesBtn = document.getElementById('yesBtn');
+  const result = document.getElementById('result');
+  let dodgeCount = 0;
+  const taunts = [
+    "// invalid input, try again",
+    "// error 404: reason to say no not found",
+    "// nice try",
+    "// access denied",
+    "// still not an option",
+    "// just click yes lol"
+  ];
+  
+  function dodge(){
+    const rect = noBtn.getBoundingClientRect();
+    if(!noBtn.classList.contains('moved')){
+      noBtn.classList.add('moved');
+      noBtn.style.left = rect.left+'px';
+      noBtn.style.top = rect.top+'px';
+    }
+    const maxLeft = window.innerWidth - rect.width - 20;
+    const maxTop = window.innerHeight - rect.height - 20;
+    noBtn.style.left = Math.max(20, Math.random()*maxLeft)+'px';
+    noBtn.style.top = Math.max(20, Math.random()*maxTop)+'px';
+    dodgeCount++;
+    result.textContent = taunts[Math.min(dodgeCount-1, taunts.length-1)];
+  }
+  
+  noBtn.addEventListener('mouseenter', dodge);
+  noBtn.addEventListener('click', (e)=>{ e.preventDefault(); dodge(); });
+  noBtn.addEventListener('touchstart', (e)=>{ e.preventDefault(); dodge(); }, {passive:false});
+
+  // -- 'YES' Logic and Transition to Envelope Stage --
+  const memoryCard = document.getElementById('memoryCard');
+  
+  yesBtn.addEventListener('click', async () => {
+    // Show loading process in current card
+    noBtn.style.display = 'none';
+    yesBtn.style.display = 'none';
+    result.style.color = 'var(--pink)';
+    
+    result.textContent = "> Access Granted. Preparing encrypted files...";
+    await new Promise(r => setTimeout(r, 1200));
+    
+    // Fade out main card, fade in Envelope card
+    card.classList.add('fade-out');
+    setTimeout(() => {
+      card.classList.remove('show');
+      memoryCard.classList.add('show');
+    }, 600);
+  });
+
+  // -- Interactive Envelope Logic --
+  const envelope = document.getElementById('envelope');
+  const envelopeHint = document.getElementById('envelopeHint');
+  
+  envelope.addEventListener('click', () => {
+    if(!envelope.classList.contains('open')) {
+      envelope.classList.add('open');
+      envelopeHint.textContent = "// 3 files successfully decrypted. ♥";
+      envelopeHint.style.color = "var(--green)";
+      envelopeHint.style.animation = "none";
+    }
+  });
+
+</script>
+</body>
+</html>

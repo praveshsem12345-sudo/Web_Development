@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registration form</title>
+    <style>
+
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Source+Sans+3:wght@400;500;600&display=swap');
+
+:root {
+  --navy: #1b2a4a;
+  --navy-deep: #121d34;
+  --brass: #b8862e;
+  --brass-light: #d9a94f;
+  --parchment: #f6f1e4;
+  --parchment-card: #fffdf7;
+  --ink: #241f18;
+  --ink-soft: #5a5347;
+  --sage: #5f8567;
+  --rust: #a6402f;
+  --line: #ddd3ba;
+
+  --radius: 10px;
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  padding: 3rem 1.25rem 5rem;
+  background:
+    radial-gradient(circle at 15% 0%, rgba(184, 134, 46, 0.08), transparent 45%),
+    var(--parchment);
+  font-family: 'Source Sans 3', -apple-system, sans-serif;
+  color: var(--ink);
+  line-height: 1.5;
+  animation: bodyFadeIn 0.6s var(--ease) both;
+}
+
+@keyframes bodyFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ---------- Header ---------- */
+
+h1 {
+  max-width: 760px;
+  margin: 0 auto 0.35rem;
+  padding: 0 0 1rem;
+  font-family: 'Fraunces', serif;
+  font-weight: 700;
+  font-size: clamp(1.7rem, 4vw, 2.4rem);
+  color: var(--navy);
+  text-align: center;
+  letter-spacing: 0.01em;
+  position: relative;
+  animation: crestDrop 0.7s var(--ease) both;
+}
+
+h1::before {
+  content: "";
+  display: block;
+  width: 46px;
+  height: 46px;
+  margin: 0 auto 0.75rem;
+  background: var(--navy);
+  border: 2px solid var(--brass);
+  border-radius: 50%;
+  box-shadow: 0 0 0 4px var(--parchment), 0 4px 10px rgba(27, 42, 74, 0.35);
+  animation: sealPulse 2.6s var(--ease) 0.7s infinite;
+}
+
+@keyframes crestDrop {
+  from { opacity: 0; transform: translateY(-14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes sealPulse {
+  0%, 100% { box-shadow: 0 0 0 4px var(--parchment), 0 4px 10px rgba(27, 42, 74, 0.35); }
+  50% { box-shadow: 0 0 0 7px var(--parchment), 0 4px 16px rgba(184, 134, 46, 0.45); }
+}
+
+h2 {
+  max-width: 760px;
+  margin: 0 auto 2.5rem;
+  font-family: 'Source Sans 3', sans-serif;
+  font-weight: 500;
+  font-style: italic;
+  font-size: 0.95rem;
+  color: var(--rust);
+  text-align: center;
+  opacity: 0;
+  animation: fadeUp 0.6s var(--ease) 0.25s forwards;
+}
+
+hr {
+  max-width: 760px;
+  margin: 2.25rem auto;
+  border: none;
+  border-top: 1px dashed var(--line);
+}
+
+/* ---------- Section headings act as numbered rail ---------- */
+
+h3 {
+  max-width: 760px;
+  margin: 0 auto 1.5rem;
+  padding-left: 3rem;
+  position: relative;
+  font-family: 'Fraunces', serif;
+  font-weight: 600;
+  font-size: 1.3rem;
+  color: var(--navy);
+  counter-increment: section;
+  opacity: 0;
+  animation: fadeUp 0.6s var(--ease) forwards;
+}
+
+h3::before {
+  content: counter(section, decimal-leading-zero);
+  position: absolute;
+  left: 0;
+  top: -0.35rem;
+  width: 2.2rem;
+  height: 2.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--navy);
+  color: var(--brass-light);
+  font-family: 'Source Sans 3', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border-radius: 50%;
+  box-shadow: 0 3px 8px rgba(27, 42, 74, 0.3);
+}
+
+body { counter-reset: section; }
+
+h3:nth-of-type(1) { animation-delay: 0.35s; }
+h3:nth-of-type(2) { animation-delay: 0.45s; }
+h3:nth-of-type(3) { animation-delay: 0.55s; }
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ---------- Form field rhythm ---------- */
+
+label {
+  display: block;
+  max-width: 760px;
+  margin: 0 auto 0.4rem;
+  padding-left: 3rem;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--ink-soft);
+  letter-spacing: 0.01em;
+}
+
+input {
+  display: block;
+  width: 100%;
+  max-width: 660px;
+  margin: 0 auto;
+  margin-left: 3rem;
+  padding: 0.65rem 0.9rem;
+  background: var(--parchment-card);
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius);
+  font-family: 'Source Sans 3', sans-serif;
+  font-size: 0.95rem;
+  color: var(--ink);
+  transition: border-color 0.25s var(--ease), box-shadow 0.25s var(--ease), transform 0.2s var(--ease);
+}
+
+@media (max-width: 780px) {
+  label, input { padding-left: 0.25rem; margin-left: 0; max-width: 100%; }
+  input { width: calc(100% - 0.5rem); }
+}
+
+input:hover {
+  border-color: var(--brass);
+}
+
+input:focus {
+  outline: none;
+  border-color: var(--navy);
+  box-shadow: 0 0 0 3px rgba(27, 42, 74, 0.15);
+  transform: translateY(-1px);
+}
+
+input:required:valid {
+  border-color: var(--sage);
+}
+
+input[type="file"] {
+  padding: 0.55rem;
+  cursor: pointer;
+  border-style: dashed;
+  color: var(--ink-soft);
+  background: repeating-linear-gradient(
+    135deg,
+    rgba(184, 134, 46, 0.04),
+    rgba(184, 134, 46, 0.04) 8px,
+    transparent 8px,
+    transparent 16px
+  );
+}
+
+input[type="file"]::file-selector-button {
+  margin-right: 0.75rem;
+  padding: 0.4rem 0.85rem;
+  background: var(--navy);
+  color: var(--parchment);
+  border: none;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s var(--ease), transform 0.15s var(--ease);
+}
+
+input[type="file"]::file-selector-button:hover {
+  background: var(--brass);
+  transform: scale(1.03);
+}
+
+input[type="file"]:hover {
+  border-color: var(--brass);
+  box-shadow: 0 3px 10px rgba(184, 134, 46, 0.18);
+}
+
+/* Disability info field sits inline after the medical upload */
+#disability {
+  margin-top: 0.6rem;
+  margin-left: 3rem;
+}
+
+@media (max-width: 780px) {
+  #disability { margin-left: 0; }
+}
+
+/* ---------- Staggered field entrance ---------- */
+
+label, input {
+  opacity: 0;
+  animation: fieldIn 0.5s var(--ease) forwards;
+}
+
+label:nth-of-type(1), input:nth-of-type(1) { animation-delay: 0.4s; }
+label:nth-of-type(2), input:nth-of-type(2) { animation-delay: 0.46s; }
+label:nth-of-type(3), input:nth-of-type(3) { animation-delay: 0.52s; }
+label:nth-of-type(4), input:nth-of-type(4) { animation-delay: 0.58s; }
+label:nth-of-type(5), input:nth-of-type(5) { animation-delay: 0.64s; }
+label:nth-of-type(6), input:nth-of-type(6) { animation-delay: 0.7s; }
+label:nth-of-type(n+7), input:nth-of-type(n+7) { animation-delay: 0.74s; }
+
+@keyframes fieldIn {
+  from { opacity: 0; transform: translateX(-6px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+/* ---------- hr as a brass divider under each field pair ---------- */
+
+h3 ~ hr {
+  max-width: 660px;
+  margin-left: auto;
+  margin-right: auto;
+  border-top: 1px solid var(--line);
+  opacity: 0.7;
+}
+    </style>
+</head>
+<body>
+    <h1>Welcome Hostel Registration form </h1>
+    <h2>Don't fill wrong information</h2>
+    <hr>
+    <h3>General Information</h3>
+    <label for="name">Enter your Name:</label>
+    <input type="text" id="name" name="name" required>
+    <br><br>
+    <label for="Rollnumber">Enter your Roll number</label>
+    <input type="number" id="Rollnumber" name="Rollnumber" required>
+    <br><br>
+    <label for="contact">Enter your contact number:</label>
+    <input type="number" id="contact" name="contact" required>
+    <br><br>
+    <label for="Date of birth">Enter you Date of Birth:</label>
+    <input type="date" id="Date of birth" name="Date of birth" required>
+    <br><br>
+    <label for="Address">Entre your current address:</label>
+    <input type="text" id="Address" name="Address" required>
+    <br><br>
+    <label for="Pincode">Enter your address Pincode:</label>
+    <input type="number" id="Pincode" name="Pincode" required>
+    <br><br><hr>
+    <h3>Family Information</h3>
+    <label for="father">Enter your Father's Name:</label>
+    <input type="text" id="father" name="father" required>
+    <br><br>
+    <label for="fathercontact">Enter your Father's contact number:</label>
+    <input type="tel" id="fathercontact" name="fathercontact" required>
+    <br><br>
+    <label for="mother">Enter your Mother's Name:</label>
+    <input type="text" id="mother" name="mother" required>
+    <br><br>
+    <label for="mothercontact">Enter your Mother's contact number:</label>
+    <input type="tel" id="mothercontact" name="mothercontact" required>
+    <br><br>
+    <label for="guardian">Enter your Guardian's Name:</label>
+    <input type="text" id="guardian" name="guardian" required>
+    <br><br><hr>
+    <h3>Upload Documents</h3>
+    <label for="resume">Upload your Result screenshort here:</label>
+    <input type="file" id="resume" name="resume" accept=".pdf,.png,.jpg,.jpeg" required>
+    <br><br><hr>
+    <label for="letter">Upload your Letter of Recommendation here:</label>
+    <input type="file" id="letter" name="letter" accept=".pdf,.png,.jpg,.jpeg" required>
+    <br><br><hr>
+    <label for="photo">Upload your recent passport size photo here:</label>
+    <input type="file" id="photo" name="photo" accept=".png,.jpg,.jpeg" required>
+    <br><br><hr>
+    <label for="signature">Upload your recent signature here:</label>
+    <input type="file" id="signature" name="signature" accept=".png,.jpg,.jpeg" required>
+    <br><br><hr>
+    <label for="idproof">Upload your ID proof here:</label>
+    <input type="file" id="idproof" name="idproof" accept=".pdf,.png,.jpg,.jpeg" required>
+    <br><br><hr>
+    <label for="medical">Upload your Medical certificate here:</label>
+    <input type="file" id="medical" name="medical" accept=".pdf,.png,.jpg,.jpeg" required>
+    <input type="text" id="disability" name="disability" placeholder="Enter disability information">
+    <br><br><hr>
+    <label for="adhar">Upload your Aadhar card here:</label>
+    <input type="file" id="adhar" name="adhar" accept=".pdf,.png,.jpg,.jpeg" required>
+    <br><br><hr>
+    <label for="bank">Upload your Bank passbook here:</label>
+    <input type="file" id="bank" name="bank" accept=".pdf,.png,.jpg,.jpeg" required>
+    <br><br><hr>
+    <label for="income">Upload your Income certificate here:</label>
+    <input type="file" id="income" name="income" accept=".pdf,.png,.jpg,.jpeg" required>
+    <br><br><hr>
+    <label for="caste">Upload your Caste certificate here:</label>
+    <input type="file" id="caste" name="caste" accept=".pdf,.png,.jpg,.jpeg" required>
+    <br><br><hr>
+    <label for="police">Upload your Police verification certificate here:</label>
+    <input type="file" id="police" name="police" accept=".pdf,.png,.jpg,.jpeg" required>
+    <br><br><hr>
+    
+    <input type="submit" id="submit" name="submit">
+
+</body>
+</html>
